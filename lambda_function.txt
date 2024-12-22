@@ -1,0 +1,57 @@
+import random
+import string
+import boto3
+from botocore.exceptions import ClientError
+import json  # Ensure to import json for proper response formatting
+
+# Initialize a DynamoDB client
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('passwordgeneratorDatabase')  # Replace with your actual table name
+
+# Lambda handler function
+def lambda_handler(event, context):
+    # Get parameters from the event or set default values
+    try:
+        length = int(event.get('length', 12))  # Default length is 12 and converting to integer
+    except ValueError:
+        return {
+            'statusCode': 400,
+            'body': "Invalid length parameter. Must be an integer."
+        }
+    
+    include_uppercase = event.get('include_uppercase', True)  
+    include_numbers = event.get('include_numbers', True)  
+    include_symbols = event.get('include_symbols', True)  
+    
+    # Generate the pool of characters based on user preferences
+    char_pool = string.ascii_lowercase  # Always include lowercase letters
+    if include_uppercase:
+        char_pool += string.ascii_uppercase
+    if include_numbers:
+        char_pool += string.digits
+    if include_symbols:
+        char_pool += string.punctuation
+
+    # Generate the password by picking random characters from the pool
+    password = ''.join(random.choice(char_pool) for _ in range(length))
+    
+    # Now we want to write the generated password into DynamoDB
+    try:
+        # Write the password to DynamoDB (using 'passwords' table)
+        response = table.put_item(
+            Item={
+                'ID': event.get('user_id', 'default_id'),  # Use 'ID' as the key instead of 'id'
+                'password': password
+            }
+        )
+        # Return a success response with the password included in JSON format
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'password': password})  # Return the password in JSON format
+        }
+    except ClientError as e:
+        # If there's an error writing to DynamoDB, return an error response
+        return {
+            'statusCode': 500,
+            'body': f"Error saving password to DynamoDB: {str(e)}"
+        }
