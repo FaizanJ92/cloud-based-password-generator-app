@@ -27,5 +27,5 @@ To run the project locally, follow these steps:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/FaizanJ92/cloudproject.git
-cd cloudproject
+git clone https://github.com/FaizanJ92/cloud-based-password-generator-app.git
+cd cloud-based-password-generator-app
